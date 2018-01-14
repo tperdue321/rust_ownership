@@ -1,4 +1,4 @@
-// exploring ownership in Rust
+// exploring ownership and references in Rust
 // Travis Perdue
 // taken almost verbatum from
 // https://doc.rust-lang.org/book/second-edition/ch04-01-what-is-ownership.html 
@@ -120,8 +120,50 @@ fn main() {
     // impossible with these rules to create dangling references/pointers
 
     // let's try
-    let ref_to_dangler = dangler();
+    // compiler will stop this from compiling
+    // let ref_to_dangler = dangler();
 
+
+    // EXPLORE SLICES
+
+    let s = String::from("  hello world.");
+    let string_literal: &str = "some string literal";
+    // references to a slice of a string
+    let hello = &s[2..7];
+    let world = &s[8..13];
+    println!("{}", hello);
+    println!("{}", world);
+
+    // if referring to beginning or end of a collection,
+    // the first/last value can be left off the range (..)
+
+    let slice = &s[0..2];   // same
+    let slice = &s[..2];    // same
+
+    let len = s.len(); // 1 past last index of string
+
+    let slice = &s[2..len]; // same
+    let slice = &s[2..];    // same
+
+    let slice = &s[0..len]; // same
+    let slice = &s[..];     // same
+
+    // this won't work. it needs to be a slice (type &str)
+    // let first_word: &str = first_word(&s);
+
+    let word = first_word(&string_literal[..]);
+    println!("first word => {}", word);
+    let word = first_word(string_literal);
+    println!("first word => {}", word);
+    let word = first_word(&s[..]);
+    println!("first word => {}", word);
+
+    // s.clear(); // ERROR. because first_word references s, clearing s causes
+    // compile time error. 
+
+    // another type of slice
+    let a = [1,2,3,4,5];
+    let slice = &a[0..2];
 }   // from EXPLORE OWNERSHIP BASICS section
     // Here, s3 goes out of scope and is dropped. s2 goes out of scope but was
     // moved, so nothing happens. s1 goes out of scope and is dropped.
@@ -172,11 +214,37 @@ fn change(string: &mut String) {
     string.push_str(", world");
 }
 
-fn dangler() -> &String {   // dangle returns a reference to a String
-    let s = String::from("heyo");   // s is a new String
-    &s  // we return a reference to the String, s
-}       // Here, s goes out of scope, and is dropped. Its memory goes away.
+// this will break if attempted to compile
+// fn dangler() -> &String {   // dangle returns a reference to a String
+//     let s = String::from("heyo");   // s is a new String
+//     &s  // we return a reference to the String, s
+// }       // Here, s goes out of scope, and is dropped. Its memory goes away.
         // the reference to s now points to null and breaks
-        // Rust compiler stops us from this 
-        
+        // Rust compiler stops us from this
+
+
+fn first_word(string: &str) -> &str {
+    let bytes = string.as_bytes();
+
+    // variables for finding first char in string
+    // while ignoring leading whitespace.
+    let mut char_found = false;
+    let mut first_char: usize = 0;
+
+    for(i, &item) in bytes.iter().enumerate() {
+        // first char found after any leading white space
+        if !char_found && !(item == b' ') {
+            char_found = true;
+            first_char = i;
+        }
+        // first space after first word ignoring any
+        // leading white space
+        else if item == b' ' && char_found {
+            return &string[first_char..i];
+        } // end if/else if
+    } // end for
+    // entire string has no whitespace
+    &string[..]
+} // end first_word
+
 
